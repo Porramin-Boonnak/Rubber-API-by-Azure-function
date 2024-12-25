@@ -1,5 +1,5 @@
 import logging
-import json
+import uuid
 import azure.functions as func
 from flask import request, Flask, jsonify
 from pymongo.mongo_client import MongoClient
@@ -26,8 +26,13 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
 @app.route("/rubber/insert", methods=["POST"])
 def insert_rubber():
     data = request.get_json()
-    
-    rubber.insert_one(data)
+    machineID=data["machineID"]
+    find = machine.find_one({"_id": str(machineID)})
+    if find:
+        retry_key = str(uuid.uuid4())
+        userId=find["own"]
+        replyuser(userId, f"ค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml\nเหลือแอมโมเนีย = {data['amm']} ml", retry_key)
+        rubber.insert_one(data)
     return jsonify("update complate")
 
 @app.route("/callback", methods=['POST'])
@@ -47,7 +52,7 @@ def callback():
         elif text[0] == "Register":
             reply(reply_token,f"กรุณาพิมพ์ข้อความตามตัวอย่างนี้\nRegisterID xxxxxxx")
         elif text[0] == "RegisterID":
-            data = machine.find_one({"_id": str(text[1])})
+            data = machine.find_one({"_id": str(text[1]), "own": {"$exists": False}})
             if data:
                 machine.update_one(
                     { "_id" : str(text[1]) },
@@ -55,7 +60,7 @@ def callback():
                 )
                 reply(reply_token,"ลงทะเบียนเรียบร้อย")
             else:
-                reply(reply_token,"ไม่พบเครื่อง")
+                reply(reply_token,"ไม่พบเครื่อง หรือ เครื่องนี้ลงทะเบียนไปแล้ว")
         elif text[0] == "Unregister":
             reply(reply_token,"กรุณาพิมพ์ข้อความตามตัวอย่างนี้\nUnregisterID xxxxxxx")
         elif text[0] == "UnregisterID":
@@ -75,6 +80,24 @@ def callback():
     except Exception as e:
         logging.error(f"Error in callback: {e}")
         return jsonify({"error": str(e)}), 500
+    
+def replyuser(userid,text,UUID):
+        url = "https://api.line.me/v2/bot/message/push"
+        headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer "+channel_access_token,
+                    "X-Line-Retry-Key": UUID
+                        }
+        data = {
+                "to": userid,
+                "messages": [
+                    {
+                        "type": "text",
+                        "text": text
+                    }
+                ]
+            }
+        requests.post(url, headers=headers, json=data)
 
 def reply(reply_token,text):
         url = "https://api.line.me/v2/bot/message/reply"

@@ -7,3 +7,4 @@ flask
 pymongo
 requests
 line-bot-sdk
+uuid
