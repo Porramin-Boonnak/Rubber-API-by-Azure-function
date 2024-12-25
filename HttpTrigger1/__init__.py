@@ -5,6 +5,7 @@ from flask import request, Flask, jsonify
 from pymongo.mongo_client import MongoClient
 import requests
 from linebot import *
+from datetime import datetime
 uri = "mongodb+srv://rubber:1212312121@cluster0.kjvosuu.mongodb.net/"
 
 # Create a new client and connect to the server
@@ -18,6 +19,22 @@ machine = db["machine"]
 channel_access_token = 'J/TmOWwvFNUvEvSuPNP/qY4Xz2Ngdxw/PkEwVWAPJLzkk4rLHq5f1HFTGu081ZgrN+vhkTH5p3ThcaCRzi5ZmAMuPxMa6vUsurte0DWZfQgwPVHqSqpuKV60I6nvWTcRMMFC4Wow7xgfb2wCIpBD9AdB04t89/1O/w1cDnyilFU='
 handler = '23da23a72acf7a5c52ca47f913092df8'
 
+days_in_thai = {
+        "Monday": "วันจันทร์",
+        "Tuesday": "วันอังคาร",
+        "Wednesday": "วันพุธ",
+        "Thursday": "วันพฤหัสบดี",
+        "Friday": "วันศุกร์",
+        "Saturday": "วันเสาร์",
+        "Sunday": "วันอาทิตย์"
+    }
+
+# สร้าง dictionary สำหรับแปลงชื่อเดือนเป็นภาษาไทย
+months_in_thai = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+]
+
 def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     """Each request is redirected to the WSGI handler.
     """
@@ -29,9 +46,23 @@ def insert_rubber():
     machineID=data["machineID"]
     find = machine.find_one({"_id": str(machineID)})
     if find:
+        date_object = datetime.strptime(data["Date"], "%Y-%m-%dT%H:%M:%SZ")
+        day_of_week = date_object.strftime("%A")  # ชื่อวันภาษาอังกฤษ
+        day_of_month = date_object.day  # วันที่ (ไม่รวมเดือนและปี)
+        month = date_object.month  # เดือน (1-12)
+        year = date_object.year  # ปี
+        hour = date_object.strftime("%H")  # ชั่วโมง (24 ชั่วโมง)
+        minute = date_object.strftime("%M")  # นาที
+        second = date_object.strftime("%S")  # วินาที
+        # แปลงเป็นชื่อวันและเดือนภาษาไทย
+        day_in_thai = days_in_thai.get(day_of_week, "Unknown day")
+        month_in_thai = months_in_thai[month - 1]  # เนื่องจากเดือนเริ่มจาก 0 ใน list
+
+        # เปลี่ยนปีให้เป็น พ.ศ.
+        buddhist_year = year + 543
         retry_key = str(uuid.uuid4())
         userId=find["own"]
-        replyuser(userId, f"ค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml\nเหลือแอมโมเนีย = {data['amm']} ml", retry_key)
+        replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml\nเหลือแอมโมเนีย = {data['amm']} ml", retry_key)
         rubber.insert_one(data)
     return jsonify("update complate")
 
