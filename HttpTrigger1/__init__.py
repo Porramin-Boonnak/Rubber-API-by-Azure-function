@@ -76,8 +76,11 @@ def callback():
         if text[0] == "Data":
             find = machine.find_one({"own": str(userId)})
             if find:
-                data = rubber.find( { "machineID": str(find["_id"]) } )
-                reply(reply_token,"พบข้อมูล")
+                data = list(rubber.find({"machineID": str(find["_id"])}))
+                for doc in data:
+                    if "_id" in doc:
+                        doc["_id"] = str(doc["_id"])
+                reply(reply_token,str(data))
             else:
                 reply(reply_token,"ไม่พบเครื่องที่ลงทะเบียน")
         elif text[0] == "Register":
