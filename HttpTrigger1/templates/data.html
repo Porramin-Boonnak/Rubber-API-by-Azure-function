@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DATA</title>
+<style>
+    #data {
+        height: 100vh;
+        width: 100vw;
+        border-collapse: collapse;
+    }
+    #data th, #data td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    #data th {
+        background-color: #f2f2f2;
+    }
+</style>
+</head>
+<body>
+    <div>
+        <table id="data">
+            <thead>
+                <th>Date</th>
+                <th>MachineID</th>
+                <th>PH</th>
+                <th>Volumnall</th>
+                <th>Amm</th>
+            </thead>
+            <tbody id="alldata">
+            </tbody>
+        </table>
+        <script>
+            const data = {{ content | tojson }};
+        tablea(data)
+        function tablea(data){
+            const dataintable = document.getElementById('alldata');
+            for (var i = 0; i < data.length; i++) {
+                var row = `<tr>
+                            <td>${formatDateToThai(new Date(data[i].Date))}</td>
+                            <td>${data[i].machineID}</td>
+                            <td>${data[i].ph}</td>
+                            <td>${data[i].volumnall}</td>
+                            <td>${data[i].amm}</td>
+                        </tr>`
+                dataintable.innerHTML += row
+            }
+        }
+
+        function formatDateToThai(date) {
+            const daysInThai = [
+                "วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"
+            ];
+            const monthsInThai = [
+                "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+                "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+            ];
+        
+            // Get day of the week, day, month, year, hours, minutes, and seconds
+            const dayOfWeek = daysInThai[date.getUTCDay()];
+            const day = date.getUTCDate();
+            const month = monthsInThai[date.getUTCMonth()];
+            const year = date.getUTCFullYear() + 543; // convert to Buddhist year
+            const hours = date.getUTCHours();
+            const minutes = date.getUTCMinutes();
+            const seconds = date.getUTCSeconds();
+        
+            // Format the date to the desired format
+            return `${dayOfWeek}ที่ ${day} ${month} ${year} เวลา ${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+        }
+        
+        function padZero(num) {
+            return num < 10 ? '0' + num : num;
+        }
+        
+        </script>
+    </div>
+</body>
+</html>

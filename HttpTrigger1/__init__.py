@@ -1,7 +1,7 @@
 import logging
 import uuid
 import azure.functions as func
-from flask import request, Flask, jsonify
+from flask import request, Flask, jsonify,render_template
 from pymongo.mongo_client import MongoClient
 import requests
 from linebot import *
@@ -62,9 +62,31 @@ def insert_rubber():
         buddhist_year = year + 543
         retry_key = str(uuid.uuid4())
         userId=find["own"]
-        replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml\nเหลือแอมโมเนีย = {data['amm']} ml", retry_key)
+        if data["sent"] == 2 :
+            replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml", retry_key)
+        elif data["sent"] == 1 :
+            replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nขณะนี้ PH = {data['ph']} ซึ่งต่ำกว่า จะทำการเติมแอมโมเนีย เมื่อกลับมาเป็นปรกติจะแจ้งให้ท่านทราบ", retry_key)
+        elif data["sent"] == 5 :
+            replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nขณะนี้ PH กลับมาปกติแล้ว\nค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml", retry_key)
+        elif data["sent"] == 3 :
+            replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nขณะนี้ มีการเติมน้ำยางเข้ามา {data['volumn']} ml\nปริมาณยางในถัง = {data['volumnall']} ml \nใช้ amm ไป {data['amm']} ml", retry_key)
         rubber.insert_one(data)
     return jsonify("update complate")
+
+
+@app.route("/data/<string:userid>", methods=['GET'])
+def data(userid):
+    find = machine.find_one({"own": str(userid)})
+    if find :
+        alldata = list(rubber.find({"machineID":str(find["_id"])}))
+        for doc in alldata:
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
+        return render_template("data.html", content=alldata )
+    else :
+        retry_key = str(uuid.uuid4())
+        replyuser(userid,"ไม่พบข้อมูล",retry_key)
+
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -76,11 +98,7 @@ def callback():
         if text[0] == "Data":
             find = machine.find_one({"own": str(userId)})
             if find:
-                data = list(rubber.find({"machineID": str(find["_id"])}))
-                for doc in data:
-                    if "_id" in doc:
-                        doc["_id"] = str(doc["_id"])
-                reply(reply_token,str(data))
+                reply(reply_token, f"https://web-hook-001.azurewebsites.net/data/{userId}")
             else:
                 reply(reply_token,"ไม่พบเครื่องที่ลงทะเบียน")
         elif text[0] == "Register":
