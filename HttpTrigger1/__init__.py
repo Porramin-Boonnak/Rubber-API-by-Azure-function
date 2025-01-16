@@ -69,7 +69,7 @@ def insert_rubber():
         elif data["sent"] == 5 :
             replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nขณะนี้ PH กลับมาปกติแล้ว\nค่า PH = {data['ph']}\nปริมาณยางในถัง = {data['volumnall']} ml", retry_key)
         elif data["sent"] == 3 :
-            replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nขณะนี้ มีการเติมน้ำยางเข้ามา {data['volumn']} ml\nปริมาณยางในถัง = {data['volumnall']} ml \nใช้ amm ไป {data['amm']} ml", retry_key)
+            replyuser(userId, f"{day_in_thai}ที่ {day_of_month} {month_in_thai} {buddhist_year}\nเวลา {hour}:{minute}:{second}\nขณะนี้ มีการเติมน้ำยางเข้ามา {data['volumn']} ml\nปริมาณยางในถัง = {data['volumnall']} ml \nเหลือ {data['amm']} ml", retry_key)
         rubber.insert_one(data)
     return jsonify("update complate")
 
